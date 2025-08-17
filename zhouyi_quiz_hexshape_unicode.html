@@ -1,0 +1,336 @@
+
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>周易64卦 · 选择题（六爻卦形 · Unicode卦符版）</title>
+  <style>
+    :root{--bg:#0f1115;--panel:#161a22;--muted:#8b93a7;--text:#eef2ff;--accent:#6aa1ff;--right:#2ecc71;--wrong:#ff5c5c;--btn:#20283a;--btn-border:#2b3550;--line:#e8edff}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,sans-serif;background:#0f1115;color:var(--text)}
+    .wrap{max-width:960px;margin:40px auto;padding:24px}
+    .card{background:var(--panel);border:1px solid #202533;border-radius:16px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    h1{margin:0 0 8px;font-size:24px}
+    p.desc{margin:0 0 18px;color:var(--muted);font-size:14px}
+    .controls{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px;margin:14px 0 12px}
+    @media (max-width:720px){.controls{grid-template-columns:1fr}}
+    select,button{width:100%;padding:12px 14px;border-radius:12px;background:var(--btn);color:var(--text);border:1px solid var(--btn-border);font-size:15px;-webkit-tap-highlight-color:transparent}
+    button.primary{background:var(--accent);color:#0b1020;border:0;font-weight:600;cursor:pointer}
+    .row{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
+    .toggle{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px}
+    .toggle input{appearance:none;width:42px;height:24px;border-radius:999px;background:#2b3550;position:relative;outline:none;border:1px solid #394465}
+    .toggle input:checked{background:#6aa1ff}
+    .toggle input::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;background:#0f1115;border-radius:50%;transition:left .2s}
+    .toggle input:checked::after{left:22px}
+
+    .progress{height:8px;background:#1b2130;border-radius:999px;overflow:hidden;margin:8px 0 16px;border:1px solid #28314a}
+    .bar{height:100%;width:0;background:linear-gradient(90deg,#6aa1ff,#8b9dff)}
+    .stats{display:flex;gap:12px;color:var(--muted);font-size:14px;flex-wrap:wrap}
+    .pill{padding:2px 8px;border:1px solid #2b3550;border-radius:999px}
+
+    .qbox{padding:16px;border:1px dashed #2b3550;border-radius:12px;margin:10px 0 16px;background:#121722}
+    .prompt{font-size:18px;line-height:1.6}
+    .options{display:grid;gap:10px;margin:12px 0}
+    .opt{padding:12px 14px;border-radius:12px;background:var(--btn);border:1px solid var(--btn-border);text-align:left}
+    .opt.correct{border-color:var(--right);background:rgba(46,204,113,.1)}
+    .opt.incorrect{border-color:var(--wrong);background:rgba(255,92,92,.08)}
+    .result{display:none;margin-top:14px;padding:14px;border-radius:12px;background:#121722;border:1px solid #28314a}
+    .footer{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}
+    .hint{font-size:13px;color:var(--muted)}
+
+    /* 卦形（绘制版） */
+    .hexwrap{display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap}
+    .hex{width:180px;max-width:60vw}
+    .hex .line{display:flex;align-items:center;height:12px;margin:8px 0}
+    .hex .yang::before{content:"";height:4px;background:var(--line);border-radius:3px;flex:1}
+    .hex .yin{gap:14px}
+    .hex .yin::before,.hex .yin::after{content:"";height:4px;background:var(--line);border-radius:3px;width:44%}
+    .hexlabel{color:#c7cff2;font-size:13px}
+    .sym{font-size:20px;letter-spacing:2px;margin-left:4px;color:#c7cff2}
+
+    /* Unicode 卦符显示 */
+    .uhex{font-size:72px; line-height:1; display:inline-block; padding:8px 12px; border:1px solid #2b3550; border-radius:12px; background:#0f1420}
+    .uhex-note{color:#aab1c8; font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>周易 64 卦 · 选择题（六爻卦形 · Unicode卦符版）</h1>
+      <p class="desc">支持两种卦形展示：① 绘制六爻 ② <b>Unicode 卦符</b>（<code>U+4DC0–U+4DFF</code>，如 ䷀=乾）。iPhone/Safari 一般自带字体可显示。</p>
+
+      <div class="controls">
+        <select id="mode">
+          <option value="shape2name" selected>模式S：只显示卦形 → 选卦名</option>
+          <option value="name2pair">模式A：卦名 → 选上/下卦</option>
+          <option value="pair2name">模式B：上/下卦 → 选卦名</option>
+          <option value="mixed">模式C：混合</option>
+        </select>
+        <select id="count">
+          <option>10</option><option>15</option><option>20</option><option>32</option><option selected>64</option>
+        </select>
+        <button id="start" class="primary" type="button">开始测验</button>
+      </div>
+
+      <div class="row">
+        <label class="toggle"><input id="useUnicode" type="checkbox" checked>用 Unicode 卦符显示</label>
+        <label class="toggle"><input id="hexInPrompt" type="checkbox">题干显示卦形（仅对“上/下卦→卦名”生效）</label>
+        <label class="toggle"><input id="hexAfter" type="checkbox" checked>答题后显示卦形</label>
+      </div>
+      <div class="uhex-note">Unicode 卦符区（易经符号）：<code>U+4DC0</code>–<code>U+4DFF</code>（共64个，顺序为《序卦》/文王次序：乾=䷀…未济=䷿）。</div>
+
+      <div class="progress"><div id="bar" class="bar"></div></div>
+      <div class="stats">
+        <div class="pill">进度：<span id="prog">0/0</span></div>
+        <div class="pill">得分：<span id="score">0</span></div>
+        <div class="pill">正确率：<span id="acc">0%</span></div>
+      </div>
+
+      <div id="qbox" class="qbox" style="display:none">
+        <div id="prompt" class="prompt"></div>
+        <div id="options" class="options"></div>
+        <div id="feedback" class="hint"></div>
+      </div>
+
+      <div id="result" class="result">
+        <h3>本轮完成 ✅</h3>
+        <div id="summary" class="hint"></div>
+        <ol id="missed" class="hint"></ol>
+        <div class="footer">
+          <button id="retryWrong" type="button">仅重做本轮错题</button>
+          <button id="restart" class="primary" type="button">重新开始</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const TRIG = {"天":[1,1,1], "泽":[1,1,0], "火":[1,0,1], "雷":[1,0,0], "风":[0,1,1], "水":[0,1,0], "山":[0,0,1], "地":[0,0,0]};
+  const TRIG_SYM = {"天":"☰","泽":"☱","火":"☲","雷":"☳","风":"☴","水":"☵","山":"☶","地":"☷"};
+
+  // King Wen order array (index matches Unicode at U+4DC0 + index)
+  const HEXA=[
+    {name:"乾",up:"天",down:"天"},{name:"坤",up:"地",down:"地"},
+    {name:"屯",up:"水",down:"雷"},{name:"蒙",up:"山",down:"水"},
+    {name:"需",up:"水",down:"天"},{name:"讼",up:"天",down:"水"},
+    {name:"师",up:"地",down:"水"},{name:"比",up:"水",down:"地"},
+    {name:"小畜",up:"风",down:"天"},{name:"履",up:"天",down:"泽"},
+    {name:"泰",up:"地",down:"天"},{name:"否",up:"天",down:"地"},
+    {name:"同人",up:"天",down:"火"},{name:"大有",up:"火",down:"天"},
+    {name:"谦",up:"地",down:"山"},{name:"豫",up:"雷",down:"地"},
+    {name:"随",up:"泽",down:"雷"},{name:"蛊",up:"山",down:"风"},
+    {name:"临",up:"地",down:"泽"},{name:"观",up:"风",down:"地"},
+    {name:"噬嗑",up:"火",down:"雷"},{name:"贲",up:"山",down:"火"},
+    {name:"剥",up:"山",down:"地"},{name:"复",up:"地",down:"雷"},
+    {name:"无妄",up:"天",down:"雷"},{name:"大畜",up:"山",down:"天"},
+    {name:"颐",up:"山",down:"雷"},{name:"大过",up:"泽",down:"风"},
+    {name:"坎",up:"水",down:"水"},{name:"离",up:"火",down:"火"},
+    {name:"咸",up:"泽",down:"山"},{name:"恒",up:"雷",down:"风"},
+    {name:"遯",up:"天",down:"山"},{name:"大壮",up:"雷",down:"天"},
+    {name:"晋",up:"火",down:"地"},{name:"明夷",up:"地",down:"火"},
+    {name:"家人",up:"风",down:"火"},{name:"睽",up:"火",down:"泽"},
+    {name:"蹇",up:"水",down:"山"},{name:"解",up:"雷",down:"水"},
+    {name:"损",up:"山",down:"泽"},{name:"益",up:"风",down:"雷"},
+    {name:"夬",up:"泽",down:"天"},{name:"姤",up:"天",down:"风"},
+    {name:"萃",up:"泽",down:"地"},{name:"升",up:"地",down:"风"},
+    {name:"困",up:"泽",down:"水"},{name:"井",up:"水",down:"风"},
+    {name:"革",up:"泽",down:"火"},{name:"鼎",up:"火",down:"风"},
+    {name:"震",up:"雷",down:"雷"},{name:"艮",up:"山",down:"山"},
+    {name:"渐",up:"风",down:"山"},{name:"归妹",up:"雷",down:"泽"},
+    {name:"丰",up:"雷",down:"火"},{name:"旅",up:"火",down:"山"},
+    {name:"巽",up:"风",down:"风"},{name:"兑",up:"泽",down:"泽"},
+    {name:"涣",up:"风",down:"水"},{name:"节",up:"水",down:"泽"},
+    {name:"中孚",up:"风",down:"泽"},{name:"小过",up:"雷",down:"山"},
+    {name:"既济",up:"水",down:"火"},{name:"未济",up:"火",down:"水"}
+  ];
+
+  const NAME_TO_INDEX = new Map(HEXA.map((h, i) => [h.name, i]));
+  const BASE = 0x4DC0; // ䷀
+
+  function $(id){return document.getElementById(id)}
+  const els={
+    mode:$('mode'),count:$('count'),start:$('start'),
+    useUnicode:$('useUnicode'),hexInPrompt:$('hexInPrompt'),hexAfter:$('hexAfter'),
+    qbox:$('qbox'),prompt:$('prompt'),options:$('options'),
+    feedback:$('feedback'),result:$('result'),summary:$('summary'),
+    missed:$('missed'),prog:$('prog'),bar:$('bar'),
+    score:$('score'),acc:$('acc'),restart:$('restart'),
+    retryWrong:$('retryWrong')
+  };
+
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a; }
+  function randInt(n){ return Math.floor(Math.random()*n); }
+
+  function hexUnicodeChar(name){
+    const idx = NAME_TO_INDEX.get(name);
+    return idx!=null ? String.fromCharCode(BASE + idx) : '?';
+  }
+
+  function hexHTML(up,down){
+    // 绘制六爻（fallback）
+    const lo = TRIG[down], hi = TRIG[up];
+    const arr = [lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]]; // bottom→top
+    let html = '<div class="hex" aria-label="卦形">';
+    for(let i=5;i>=0;i--){ html += `<div class="line ${arr[i]===1?'yang':'yin'}"></div>`; }
+    html += '</div>'; return html;
+  }
+
+  function renderShape(name, up, down){
+    if(els.useUnicode && els.useUnicode.checked){
+      const ch = hexUnicodeChar(name);
+      return `<span class="uhex" title="${name}">${ch}</span>`;
+    }else{
+      return hexHTML(up, down);
+    }
+  }
+
+  let questions=[], idx=0, score=0, wrong=[], wrongBackup=[];
+
+  function genOne(mode){
+    const item = HEXA[randInt(HEXA.length)];
+    if(mode==='shape2name'){
+      const answer = item.name;
+      const names = new Set();
+      while(names.size<3){
+        const other = HEXA[randInt(HEXA.length)].name;
+        if(other!==answer) names.add(other);
+      }
+      const options = shuffle([answer, ...Array.from(names)]);
+      const prompt = `请根据下方<strong>卦形</strong>选择卦名：<div class="hexwrap"><div class="hexlabel">卦形：</div>${renderShape(item.name, item.up,item.down)}</div>`;
+      return {mode, item, prompt, options, answer};
+    }else if(mode==='name2pair'){
+      const correct = `上卦：${item.up}，下卦：${item.down}`;
+      const ds = new Set();
+      while(ds.size<3){
+        const a = HEXA[randInt(HEXA.length)], b = HEXA[randInt(HEXA.length)];
+        const opt = `上卦：${a.up}，下卦：${b.down}`;
+        if(opt!==correct) ds.add(opt);
+      }
+      const options = shuffle([correct, ...Array.from(ds)]);
+      const prompt = `卦名：${item.name} → 请选择其上/下卦`;
+      return {mode, item, prompt, options, answer:correct};
+    }else if(mode==='pair2name'){
+      const answer = item.name;
+      const names = new Set();
+      while(names.size<3){
+        const other = HEXA[randInt(HEXA.length)].name;
+        if(other!==answer) names.add(other);
+      }
+      const options = shuffle([answer, ...Array.from(names)]);
+      let prompt = `上卦：${item.up}（${TRIG_SYM[item.up]}）/ 下卦：${item.down}（${TRIG_SYM[item.down]}） → 请选择卦名`;
+      if(els.hexInPrompt && els.hexInPrompt.checked){
+        prompt += `<div class="hexwrap"><div class="hexlabel">卦形：</div>${renderShape(item.name, item.up,item.down)}</div>`;
+      }
+      return {mode, item, prompt, options, answer};
+    }else{
+      const r = Math.random();
+      if(r<0.34) return genOne('shape2name');
+      if(r<0.67) return genOne('name2pair');
+      return genOne('pair2name');
+    }
+  }
+
+  function genQuestions(mode, count){
+    const arr = [];
+    for(let i=0;i<count;i++) arr.push(genOne(mode));
+    return arr;
+  }
+
+  function updateHUD(){
+    els.prog.textContent = `${Math.min(idx,questions.length)}/${questions.length}`;
+    els.score.textContent = String(score);
+    const acc = questions.length ? Math.round(100*score/Math.max(1, idx)) : 0;
+    els.acc.textContent = `${isNaN(acc)?0:acc}%`;
+    els.bar.style.width = `${questions.length?(100*idx/questions.length):0}%`;
+  }
+  function clearNode(node){ while(node.firstChild) node.removeChild(node.firstChild); }
+
+  function renderQuestion(){
+    els.result.style.display='none';
+    els.qbox.style.display='block';
+    clearNode(els.options);
+    els.feedback.innerHTML='';
+    const q = questions[idx];
+
+    els.prompt.innerHTML = q.prompt;
+
+    q.options.forEach(text=>{
+      const btn = document.createElement('button');
+      btn.type='button'; btn.className='opt'; btn.textContent=text;
+      btn.onclick = () => {
+        document.querySelectorAll('.opt').forEach(b=>b.disabled=true);
+        const ok = (text===q.answer);
+        if(ok){
+          btn.classList.add('correct'); score++;
+        }else{
+          btn.classList.add('incorrect');
+          document.querySelectorAll('.opt').forEach(b=>{ if(b.textContent===q.answer) b.classList.add('correct'); });
+          wrong.push(q);
+        }
+        // 反馈（含卦形或Unicode卦符）
+        if(els.hexAfter && els.hexAfter.checked){
+          const tip = (q.mode==='shape2name')
+            ? `正确答案：<b>${q.item.name}</b>（上：${q.item.up} / 下：${q.item.down}）`
+            : (q.mode==='name2pair'
+               ? `${q.item.name} = 上卦「${q.item.up}」/ 下卦「${q.item.down}」`
+               : `上卦「${q.item.up}」/ 下卦「${q.item.down}」 = 「${q.item.name}」`);
+          els.feedback.innerHTML = `<div>${ok?'正确 ✅':'再记一遍 🙌'}：${tip}</div><div class="hexwrap"><div class="hexlabel">卦形：</div>${renderShape(q.item.name, q.item.up,q.item.down)}</div>`;
+        }else{
+          els.feedback.textContent = ok ? '正确 ✅' : '再记一遍 🙌';
+        }
+
+        idx++; updateHUD(); setTimeout(nextStep, 650);
+      };
+      els.options.appendChild(btn);
+    });
+    updateHUD();
+  }
+
+  function nextStep(){ if(idx>=questions.length) showResult(); else renderQuestion(); }
+
+  function showResult(){
+    els.qbox.style.display='none'; els.result.style.display='block';
+    const acc = Math.round(100*score/questions.length);
+    els.summary.innerHTML = `本轮共 ${questions.length} 题，得分 <b>${score}</b>，正确率 <b>${acc}%</b>。`;
+    clearNode(els.missed);
+    if(!wrong.length){ const li=document.createElement('li'); li.textContent='没有错题，太棒了！'; els.missed.appendChild(li); }
+    else{
+      const seen=new Set();
+      wrong.forEach(q=>{
+        const key=q.item.name+'|'+q.item.up+'|'+q.item.down+'|'+q.mode;
+        if(seen.has(key)) return; seen.add(key);
+        const li=document.createElement('li');
+        li.innerHTML = (q.mode==='shape2name')
+          ? `卦形 → 「${q.item.name}」`
+          : (q.mode==='name2pair'
+             ? `${q.item.name} → 上卦「${q.item.up}」/ 下卦「${q.item.down}」`
+             : `上卦「${q.item.up}」/ 下卦「${q.item.down}」 → 「${q.item.name}」`);
+        els.missed.appendChild(li);
+      });
+    }
+    wrongBackup = wrong.slice();
+  }
+
+  function startQuiz(){
+    const mode = els.mode.value;
+    const count = parseInt(els.count.value,10)||10;
+    idx=0; score=0; wrong=[];
+    questions = genQuestions(mode, count);
+    els.result.style.display='none';
+    renderQuestion();
+  }
+
+  // 兼容移动端
+  $('start').onclick = ()=> startQuiz();
+  $('restart').onclick = ()=> startQuiz();
+  $('retryWrong').onclick = ()=>{
+    if(!wrongBackup.length){ alert('本轮没有错题，先做一轮完整测验吧。'); return; }
+    idx=0; score=0; wrong=[]; questions = wrongBackup.slice();
+    els.result.style.display='none'; renderQuestion();
+  };
+})();
+</script>
+</body>
+</html>
