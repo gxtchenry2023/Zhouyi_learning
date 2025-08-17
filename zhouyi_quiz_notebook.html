@@ -1,0 +1,426 @@
+
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>周易64卦 · 选择题（错题本版）</title>
+  <style>
+    :root{
+      --bg:#0f1115;--panel:#161a22;--muted:#8b93a7;--text:#eef2ff;
+      --accent:#6aa1ff;--right:#2ecc71;--wrong:#ff5c5c;
+      --btn:#20283a;--btn-border:#2b3550;--line:#e8edff
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,sans-serif;background:#0f1115;color:var(--text)}
+    .wrap{max-width:1000px;margin:40px auto;padding:24px}
+    .card{background:var(--panel);border:1px solid #202533;border-radius:16px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    h1{margin:0 0 8px;font-size:24px}
+    p.desc{margin:0 0 18px;color:var(--muted);font-size:14px}
+    .controls{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px;margin:14px 0 12px}
+    @media (max-width:900px){.controls{grid-template-columns:1fr}}
+    select,button{width:100%;padding:12px 14px;border-radius:12px;background:var(--btn);color:var(--text);border:1px solid var(--btn-border);font-size:15px;-webkit-tap-highlight-color:transparent}
+    button.primary{background:var(--accent);color:#0b1020;border:0;font-weight:600;cursor:pointer}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+    .pill{padding:6px 10px;border:1px solid #2b3550;border-radius:10px;color:var(--muted);font-size:13px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 10px}
+    .qbox{padding:16px;border:1px dashed #2b3550;border-radius:12px;margin:10px 0 16px;background:#121722}
+    .prompt{font-size:18px;line-height:1.6}
+    .options{display:grid;gap:10px;margin:12px 0}
+    .opt{padding:12px 14px;border-radius:12px;background:var(--btn);border:1px solid var(--btn-border);text-align:left}
+    .opt.correct{border-color:var(--right);background:rgba(46,204,113,.1)}
+    .opt.incorrect{border-color:var(--wrong);background:rgba(255,92,92,.08)}
+    .progress{height:8px;background:#1b2130;border-radius:999px;overflow:hidden;margin:8px 0 16px;border:1px solid #28314a}
+    .bar{height:100%;width:0;background:linear-gradient(90deg,#6aa1ff,#8b9dff)}
+    .stats{display:flex;gap:12px;color:var(--muted);font-size:14px;flex-wrap:wrap}
+    .result{display:none;margin-top:14px;padding:14px;border-radius:12px;background:#121722;border:1px solid #28314a}
+    .footer{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}
+    .hint{font-size:13px;color:var(--muted)}
+
+    /* hex shape */
+    .hexwrap{display:flex;align-items:center;gap:12px;margin-top:8px;flex-wrap:wrap}
+    .hex{width:160px;max-width:48vw}
+    .hex .line{display:flex;align-items:center;height:12px;margin:8px 0}
+    .hex .yang::before{content:"";height:4px;background:var(--line);border-radius:3px;flex:1}
+    .hex .yin{gap:14px}
+    .hex .yin::before,.hex .yin::after{content:"";height:4px;background:var(--line);border-radius:3px;width:44%}
+    .hexlabel{color:#c7cff2;font-size:13px}
+    .sym{font-size:20px;letter-spacing:2px;margin-left:4px;color:#c7cff2}
+
+    /* notebook panel */
+    .panel{margin-top:16px;padding:12px;border-radius:12px;background:#121722;border:1px solid #28314a}
+    .panel h3{margin:0 0 10px}
+    .list{display:grid;grid-template-columns:1fr;gap:8px;max-height:260px;overflow:auto}
+    .item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #29324b;border-radius:10px;background:#0f1420}
+    .item small{color:var(--muted)}
+    .btn-sm{padding:6px 10px;border-radius:8px;border:1px solid #2b3550;background:#20283a;color:var(--text);font-size:13px}
+    .btn-danger{border-color:#7b2c2c;background:#3a2020}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>周易 64 卦 · 选择题（错题本版）</h1>
+      <p class="desc">带有 <b>每日错题整理</b> 与 <b>持久化错题本</b>：错题会保存到本机浏览器，下次打开仍在。可从错题本中「学习」或「测验」。</p>
+
+      <div class="controls">
+        <select id="mode">
+          <option value="name2pair">模式A：卦名 → 选上/下卦</option>
+          <option value="pair2name">模式B：上/下卦 → 选卦名</option>
+          <option value="mixed" selected>模式C：混合</option>
+        </select>
+        <select id="count">
+          <option>10</option><option>15</option><option>20</option><option>32</option><option selected>64</option>
+        </select>
+        <button id="start" class="primary" type="button">开始测验</button>
+      </div>
+
+      <div class="row">
+        <span class="pill" id="nbStat">错题本：0 条</span>
+        <div class="actions">
+          <button id="digestToday" class="btn-sm">生成今日错题集</button>
+          <button id="quizFromNB" class="btn-sm">从错题本测验</button>
+          <button id="studyNB" class="btn-sm">错题本学习</button>
+          <button id="clearNB" class="btn-sm btn-danger">清空错题本</button>
+        </div>
+      </div>
+
+      <div class="progress"><div id="bar" class="bar"></div></div>
+      <div class="stats">
+        <div class="pill">进度：<span id="prog">0/0</span></div>
+        <div class="pill">得分：<span id="score">0</span></div>
+        <div class="pill">正确率：<span id="acc">0%</span></div>
+      </div>
+
+      <div id="qbox" class="qbox" style="display:none">
+        <div id="prompt" class="prompt"></div>
+        <div id="options" class="options"></div>
+        <div id="feedback" class="hint"></div>
+      </div>
+
+      <div id="result" class="result">
+        <h3>本轮完成 ✅</h3>
+        <div id="summary" class="hint"></div>
+        <ol id="missed" class="hint"></ol>
+        <div class="footer">
+          <button id="retryWrong" type="button">仅重做本轮错题</button>
+          <button id="restart" class="primary" type="button">重新开始</button>
+        </div>
+      </div>
+
+      <div id="notebookPanel" class="panel" style="display:none">
+        <h3>错题本（保存在本机，清空浏览器数据会丢失）</h3>
+        <div class="list" id="nbList"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'zhouyiWrongBank.v1';
+
+  const HEXA=[
+    {name:"乾",up:"天",down:"天"},{name:"坤",up:"地",down:"地"},
+    {name:"屯",up:"水",down:"雷"},{name:"蒙",up:"山",down:"水"},
+    {name:"需",up:"水",down:"天"},{name:"讼",up:"天",down:"水"},
+    {name:"师",up:"地",down:"水"},{name:"比",up:"水",down:"地"},
+    {name:"小畜",up:"风",down:"天"},{name:"履",up:"天",down:"泽"},
+    {name:"泰",up:"地",down:"天"},{name:"否",up:"天",down:"地"},
+    {name:"同人",up:"天",down:"火"},{name:"大有",up:"火",down:"天"},
+    {name:"谦",up:"地",down:"山"},{name:"豫",up:"雷",down:"地"},
+    {name:"随",up:"泽",down:"雷"},{name:"蛊",up:"山",down:"风"},
+    {name:"临",up:"地",down:"泽"},{name:"观",up:"风",down:"地"},
+    {name:"噬嗑",up:"火",down:"雷"},{name:"贲",up:"山",down:"火"},
+    {name:"剥",up:"山",down:"地"},{name:"复",up:"地",down:"雷"},
+    {name:"无妄",up:"天",down:"雷"},{name:"大畜",up:"山",down:"天"},
+    {name:"颐",up:"山",down:"雷"},{name:"大过",up:"泽",down:"风"},
+    {name:"坎",up:"水",down:"水"},{name:"离",up:"火",down:"火"},
+    {name:"咸",up:"泽",down:"山"},{name:"恒",up:"雷",down:"风"},
+    {name:"遯",up:"天",down:"山"},{name:"大壮",up:"雷",down:"天"},
+    {name:"晋",up:"火",down:"地"},{name:"明夷",up:"地",down:"火"},
+    {name:"家人",up:"风",down:"火"},{name:"睽",up:"火",down:"泽"},
+    {name:"蹇",up:"水",down:"山"},{name:"解",up:"雷",down:"水"},
+    {name:"损",up:"山",down:"泽"},{name:"益",up:"风",down:"雷"},
+    {name:"夬",up:"泽",down:"天"},{name:"姤",up:"天",down:"风"},
+    {name:"萃",up:"泽",down:"地"},{name:"升",up:"地",down:"风"},
+    {name:"困",up:"泽",down:"水"},{name:"井",up:"水",down:"风"},
+    {name:"革",up:"泽",down:"火"},{name:"鼎",up:"火",down:"风"},
+    {name:"震",up:"雷",down:"雷"},{name:"艮",up:"山",down:"山"},
+    {name:"渐",up:"风",down:"山"},{name:"归妹",up:"雷",down:"泽"},
+    {name:"丰",up:"雷",down:"火"},{name:"旅",up:"火",down:"山"},
+    {name:"巽",up:"风",down:"风"},{name:"兑",up:"泽",down:"泽"},
+    {name:"涣",up:"风",down:"水"},{name:"节",up:"水",down:"泽"},
+    {name:"中孚",up:"风",down:"泽"},{name:"小过",up:"雷",down:"山"},
+    {name:"既济",up:"水",down:"火"},{name:"未济",up:"火",down:"水"}
+  ];
+  const HEXA_MAP = new Map(HEXA.map(h=>[h.name, h]));
+
+  function $(id){return document.getElementById(id)}
+  const els={
+    mode:$('mode'),count:$('count'),start:$('start'),
+    qbox:$('qbox'),prompt:$('prompt'),options:$('options'),
+    feedback:$('feedback'),result:$('result'),summary:$('summary'),
+    missed:$('missed'),prog:$('prog'),bar:$('bar'),
+    score:$('score'),acc:$('acc'),restart:$('restart'),
+    retryWrong:$('retryWrong'),
+    nbStat:$('nbStat'), digestToday:$('digestToday'),
+    quizFromNB:$('quizFromNB'), studyNB:$('studyNB'), clearNB:$('clearNB'),
+    notebookPanel:$('notebookPanel'), nbList:$('nbList')
+  };
+
+  // --- localStorage Wrong Bank ---
+  function now(){ return Date.now(); }
+  function ymd(ts){
+    const d = ts ? new Date(ts) : new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function loadBank(){
+    try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }catch(e){ return []; }
+  }
+  function saveBank(arr){ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }
+  function bankKey(item){ return item.name+'|'+item.up+'|'+item.down; }
+  function addToBank(item, mode){
+    const bank = loadBank();
+    const key = bankKey(item);
+    let rec = bank.find(x=>x.key===key);
+    if(!rec){
+      rec = { key, name:item.name, up:item.up, down:item.down, modes:{name2pair:0,pair2name:0}, timesWrong:0, timesRight:0, lastMissed:0, lastReviewed:0 };
+      bank.push(rec);
+    }
+    rec.modes[mode] = (rec.modes[mode]||0)+1;
+    rec.timesWrong += 1;
+    rec.lastMissed = now();
+    saveBank(bank);
+    updateNBUI();
+  }
+  function markRightInBank(item){
+    const bank = loadBank();
+    const key = bankKey(item);
+    const rec = bank.find(x=>x.key===key);
+    if(rec){
+      rec.timesRight += 1;
+      rec.lastReviewed = now();
+      saveBank(bank);
+      updateNBUI();
+    }
+  }
+  function removeFromBank(key){
+    const bank = loadBank().filter(x=>x.key!==key);
+    saveBank(bank); updateNBUI();
+  }
+  function clearBank(){ saveBank([]); updateNBUI(); }
+
+  function updateNBUI(){
+    const bank = loadBank();
+    els.nbStat.textContent = `错题本：${bank.length} 条`;
+    els.notebookPanel.style.display = bank.length? 'block':'none';
+    els.nbList.innerHTML = '';
+    bank.forEach(rec=>{
+      const div = document.createElement('div');
+      div.className='item';
+      const left = document.createElement('div');
+      const right = document.createElement('div');
+      left.innerHTML = `<b>${rec.name}</b> <small>（上：${rec.up} / 下：${rec.down}）</small><br><small>错：${rec.timesWrong}，对：${rec.timesRight}，最近错题：${ymd(rec.lastMissed)}</small>`;
+      right.innerHTML = `<button class="btn-sm" data-act="study" data-key="${rec.key}">学习</button> <button class="btn-sm" data-act="quiz1" data-key="${rec.key}">测验1题</button> <button class="btn-sm btn-danger" data-act="del" data-key="${rec.key}">移出</button>`;
+      div.appendChild(left); div.appendChild(right);
+      els.nbList.appendChild(div);
+    });
+    els.nbList.querySelectorAll('button').forEach(btn=>{
+      btn.onclick = ()=>{
+        const act = btn.getAttribute('data-act');
+        const key = btn.getAttribute('data-key');
+        const rec = loadBank().find(x=>x.key===key);
+        if(!rec) return;
+        if(act==='del'){ removeFromBank(key); }
+        else if(act==='study'){ studyOne(rec); }
+        else if(act==='quiz1'){ quizFrom([rec]); }
+      };
+    });
+  }
+
+  // --- hex helpers ---
+  const TRIG = {
+    "天":[1,1,1], "泽":[1,1,0], "火":[1,0,1], "雷":[1,0,0],
+    "风":[0,1,1], "水":[0,1,0], "山":[0,0,1], "地":[0,0,0]
+  };
+  function hexHTML(up,down){
+    const lo = TRIG[down], hi = TRIG[up];
+    const arr = [lo[0],lo[1],lo[2],hi[0],hi[1],hi[2]]; // bottom→top
+    let html = '<div class="hex" aria-label="卦形">';
+    for(let i=5;i>=0;i--){ html += `<div class="line ${arr[i]===1?'yang':'yin'}"></div>`; }
+    html += '</div>'; return html;
+  }
+
+  // --- quiz state ---
+  let questions=[], idx=0, score=0, wrong=[], wrongBackup=[], sourceLabel='随机抽题';
+
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a; }
+  function randInt(n){ return Math.floor(Math.random()*n); }
+
+  function genQuestions(mode, count, fromSet=null){
+    const pool = fromSet ? fromSet.slice() : shuffle(HEXA.slice()).slice(0, count);
+    return pool.map(item=>{
+      const m = mode==="mixed" ? (Math.random()<0.5?"name2pair":"pair2name") : mode;
+      if(m==="name2pair"){
+        const correct = `上卦：${item.up}，下卦：${item.down}`;
+        const ds = new Set();
+        while(ds.size<3){
+          const a = (fromSet? fromSet[randInt(fromSet.length)]: HEXA[randInt(HEXA.length)]);
+          const b = (fromSet? fromSet[randInt(fromSet.length)]: HEXA[randInt(HEXA.length)]);
+          const opt = `上卦：${a.up}，下卦：${b.down}`;
+          if(opt!==correct) ds.add(opt);
+        }
+        const choices = shuffle([correct, ...Array.from(ds)]);
+        return {mode:m, item, prompt:`卦名：${item.name} → 请选择其上/下卦`, options:choices, answer:correct};
+      }else{
+        const correct = item.name;
+        const names = new Set();
+        while(names.size<3){
+          const other = (fromSet? fromSet[randInt(fromSet.length)]: HEXA[randInt(HEXA.length)]).name;
+          if(other!==correct) names.add(other);
+        }
+        const choices = shuffle([correct, ...Array.from(names)]);
+        return {mode:m, item, prompt:`上卦：${item.up} / 下卦：${item.down} → 请选择卦名`, options:choices, answer:correct};
+      }
+    });
+  }
+
+  function updateHUD(){
+    $('prog').textContent = `${Math.min(idx,questions.length)}/${questions.length}`;
+    $('score').textContent = String(score);
+    const acc = questions.length ? Math.round(100*score/Math.max(1, idx)) : 0;
+    $('acc').textContent = `${isNaN(acc)?0:acc}%`;
+    $('bar').style.width = `${questions.length?(100*idx/questions.length):0}%`;
+  }
+  function clearNode(node){ while(node.firstChild) node.removeChild(node.firstChild); }
+
+  function renderQuestion(){
+    $('result').style.display='none';
+    $('qbox').style.display='block';
+    clearNode($('options')); $('feedback').innerHTML='';
+    const q = questions[idx];
+    $('prompt').innerHTML = q.prompt + `<div class="hexwrap"><div class="hexlabel">卦形：</div>${hexHTML(q.item.up,q.item.down)}</div>`;
+    q.options.forEach(text=>{
+      const btn = document.createElement('button');
+      btn.type='button'; btn.className='opt'; btn.textContent=text;
+      btn.onclick = () => {
+        document.querySelectorAll('.opt').forEach(b=>b.disabled=true);
+        const ok = (text===q.answer);
+        if(ok){
+          btn.classList.add('correct');
+          score++;
+          markRightInBank(q.item);
+        }else{
+          btn.classList.add('incorrect');
+          document.querySelectorAll('.opt').forEach(b=>{ if(b.textContent===q.answer) b.classList.add('correct'); });
+          wrong.push(q);
+          addToBank(q.item, q.mode);
+        }
+        idx++; updateHUD(); setTimeout(nextStep, 600);
+      };
+      $('options').appendChild(btn);
+    });
+    updateHUD();
+  }
+
+  function nextStep(){ if(idx>=questions.length) showResult(); else renderQuestion(); }
+
+  function showResult(){
+    $('qbox').style.display='none'; $('result').style.display='block';
+    const acc = Math.round(100*score/questions.length);
+    $('summary').innerHTML = `${sourceLabel} · 本轮共 ${questions.length} 题，得分 <b>${score}</b>，正确率 <b>${acc}%</b>。`;
+    clearNode($('missed'));
+    if(!wrong.length){ const li=document.createElement('li'); li.textContent='没有错题，太棒了！'; $('missed').appendChild(li); }
+    else{
+      const seen=new Set();
+      wrong.forEach(q=>{
+        const key=q.item.name+'|'+q.item.up+'|'+q.item.down+'|'+q.mode;
+        if(seen.has(key)) return; seen.add(key);
+        const li=document.createElement('li');
+        li.innerHTML = (q.mode==='name2pair')
+          ? `${q.item.name} → 上卦「${q.item.up}」/ 下卦「${q.item.down}」`
+          : `上卦「${q.item.up}」/ 下卦「${q.item.down}」 → 「${q.item.name}」`;
+        $('missed').appendChild(li);
+      });
+    }
+    wrongBackup = wrong.slice();
+  }
+
+  function startQuiz(fromWrong){
+    const mode = $('mode').value;
+    const count = parseInt($('count').value,10)||10;
+    idx=0; score=0; wrong=[]; sourceLabel='随机抽题';
+    questions = genQuestions(mode, count, null);
+    $('result').style.display='none'; renderQuestion();
+  }
+
+  function quizFrom(recs){
+    if(!recs || !recs.length){ alert('错题本为空或没有符合条件的题目。'); return; }
+    const mode = $('mode').value;
+    const items = recs.map(r => ({name:r.name, up:r.up, down:r.down}));
+    idx=0; score=0; wrong=[]; sourceLabel='来自错题本';
+    questions = genQuestions(mode, Math.min(items.length, parseInt($('count').value,10)||items.length), items);
+    $('result').style.display='none'; renderQuestion();
+  }
+
+  function studyOne(rec){
+    // 简单学习卡片：显示卦名，点“显示答案”，再可“已掌握(移出)”或“下一条”
+    const container = document.createElement('div');
+    container.className='panel';
+    container.innerHTML = `<h3>学习：${rec.name}</h3>
+      <div class="hexwrap"><div class="hexlabel">卦形：</div>${hexHTML(rec.up, rec.down)}<div class="hexlabel">（上：${rec.up} / 下：${rec.down}）</div></div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn-sm" id="reveal">显示上下卦</button>
+        <button class="btn-sm" id="master">已掌握（移出错题本）</button>
+        <button class="btn-sm" id="close">关闭</button>
+      </div>
+      <div class="hint" id="ans" style="margin-top:8px"></div>`;
+    document.querySelector('.card').appendChild(container);
+    container.querySelector('#reveal').onclick = ()=>{
+      container.querySelector('#ans').textContent = `上卦：${rec.up} / 下卦：${rec.down}`;
+      markRightInBank(rec);
+    };
+    container.querySelector('#master').onclick = ()=>{ removeFromBank(rec.key); container.remove(); };
+    container.querySelector('#close').onclick = ()=> container.remove();
+  }
+
+  function digestToday(){
+    const bank = loadBank();
+    const today = ymd(now());
+    let recs = bank.filter(x=> ymd(x.lastMissed)===today );
+    if(!recs.length){
+      // 如果今天没有错题，回溯48小时
+      const ts48 = now() - 48*3600*1000;
+      recs = bank.filter(x=> x.lastMissed >= ts48);
+    }
+    if(!recs.length){ alert('最近48小时没有错题记录。先做一轮测验再生成吧～'); return; }
+    quizFrom(recs);
+  }
+
+  // events
+  $('start').onclick = ()=> startQuiz(false);
+  $('restart').onclick = ()=> startQuiz(false);
+  $('retryWrong').onclick = ()=>{
+    if(!wrongBackup.length){ alert('本轮没有错题，先做一轮完整测验吧。'); return; }
+    const items = wrongBackup.map(q=>q.item);
+    idx=0; score=0; wrong=[]; sourceLabel='仅重做本轮错题';
+    questions = genQuestions($('mode').value, items.length, items);
+    $('result').style.display='none'; renderQuestion();
+  };
+  $('quizFromNB').onclick = ()=> quizFrom(loadBank());
+  $('studyNB').onclick = ()=>{
+    const bank = loadBank();
+    if(!bank.length){ alert('错题本为空。'); return; }
+    studyOne(bank[0]);
+  };
+  $('digestToday').onclick = ()=> digestToday();
+  $('clearNB').onclick = ()=>{
+    if(confirm('确定清空错题本吗？此操作不可恢复。')) clearBank();
+  };
+
+  // init
+  updateNBUI();
+})();
+</script>
+</body>
+</html>
